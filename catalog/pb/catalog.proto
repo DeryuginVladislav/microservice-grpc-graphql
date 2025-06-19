@@ -1,0 +1,44 @@
+// protoc   --go_out=.   --go-grpc_out=.   --go_opt=paths=source_relative   --go-grpc_opt=paths=source_relative   catalog/pb/catalog.proto
+syntax = "proto3";
+
+package pb;
+
+option go_package = "go-microservice/catalog/pb";
+
+service CatalogService {
+  rpc PostProduct (PostProductRequest) returns (ProductResponse);
+  rpc GetProduct (GetProductRequest) returns (ProductResponse);
+  rpc GetProducts (GetProductsRequest) returns (ProductsResponse);
+}
+
+message Product {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+}
+
+message PostProductRequest {
+  string name = 1;
+  string description = 2;
+  double price = 3;
+}
+
+message GetProductRequest {
+  string id = 1;
+}
+
+message GetProductsRequest {
+  uint64 skip = 1;
+  uint64 take = 2;
+  repeated string ids = 3;
+  string query = 4;
+}
+
+message ProductResponse {
+  Product product = 1;
+}
+
+message ProductsResponse {
+  repeated Product products = 1;
+}

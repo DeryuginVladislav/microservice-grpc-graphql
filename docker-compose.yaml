@@ -1,0 +1,79 @@
+
+services:
+  account:
+    build:
+      context: .
+      dockerfile: ./account/app.dockerfile
+    depends_on:
+      - account_db
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@account_db/accounts?sslmode=disable
+    restart: on-failure
+
+  account_db:
+    build:
+      context: ./account
+      dockerfile: ./db.dockerfile
+    environment:
+      POSTGRES_DB: accounts
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    restart: unless-stopped
+
+  catalog:
+    build:
+      context: .
+      dockerfile: ./catalog/app.dockerfile
+    depends_on:
+      - catalog_db
+    environment:
+      DATABASE_URL: http://catalog_db:9200
+    restart: on-failure
+
+  catalog_db:
+    image: elasticsearch:8.16.3
+    ports:
+    - "9200:9200" 
+    environment:
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
+      discovery.type: single-node
+      xpack.security.enabled: "false"        # Отключаем безопасность
+      xpack.security.http.ssl.enabled: "false"  # Отключаем SSL
+
+  order:
+    build:
+      context: .
+      dockerfile: ./order/app.dockerfile
+    depends_on:
+      - order_db
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@order_db/orders?sslmode=disable
+      ACCOUNT_SERVICE_URL: account:50051
+      CATALOG_SERVICE_URL: catalog:50051
+    restart: on-failure
+
+  order_db:
+    build:
+      context: ./order
+      dockerfile: ./db.dockerfile
+    environment:
+      POSTGRES_DB: orders
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    restart: unless-stopped
+
+  graphql:
+    build:
+      context: .
+      dockerfile: ./graphql/app.dockerfile
+    ports:
+      - 8000:8080
+    depends_on:
+      - account
+      - catalog
+    environment:
+      ACCOUNT_SERVICE_URL: account:50051
+      CATALOG_SERVICE_URL: catalog:50051
+      ORDER_SERVICE_URL: order:50051
+    restart: on-failure
+
